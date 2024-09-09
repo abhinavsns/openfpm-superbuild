@@ -46,8 +46,12 @@ if [ -d "$prefix_dependencies/OPENBLAS" ]; then
   bash_library="$bash_library:$prefix_dependencies/OPENBLAS/lib"
 fi
 
-if [ -d "$prefix_dependencies/SUITESPARSE"  -a -f "$prefix_dependencies/SUITESPARSE/include/umfpack.h" ]; then
-  bash_library="$bash_library:$prefix_dependencies/SUITESPARSE/lib"
+if [ -d "$prefix_dependencies/SUITESPARSE"  -a -f "$prefix_dependencies/SUITESPARSE/include/suitesparse/umfpack.h" ]; then
+    if [ -d "$prefix_dependencies/SUITESPARSE/lib" ]; then
+        bash_library="$bash_library:$prefix_dependencies/SUITESPARSE/lib"
+    elif [ -d "$prefix_dependencies/SUITESPARSE/lib64" ]; then
+        bash_library="$bash_library:$prefix_dependencies/SUITESPARSE/lib64"
+    fi
 fi
 
 if [ -d "$prefix_dependencies/CATALYST/lib" ]; then
