@@ -1,13 +1,10 @@
 #! /bin/bash
 
-rm -rf blitz-1.0.2
-wget http://ppmcore.mpi-cbg.de/upload/blitz-1.0.2.tar.gz -O blitz-1.0.2.tar.gz
-tar -xf blitz-1.0.2.tar.gz
-cd blitz-1.0.2
-
+rm -rf blitz
+git clone --branch 1.0.2 https://github.com/blitzpp/blitz.git
+cd blitz
 BUILDDIR=build
-mkdir -p $BUILDDIR
-cd $BUILDDIR
+mkdir -p $BUILDDIR && cd $BUILDDIR
 echo "cmake ../. -DCMAKE_INSTALL_PREFIX=$1/BLITZ"
 cmake ../. -DCMAKE_INSTALL_PREFIX=$1/BLITZ
 make -j $2
