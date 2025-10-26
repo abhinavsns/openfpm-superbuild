@@ -1,18 +1,30 @@
 FROM debian:bookworm-slim
 
-RUN apt update && apt install -y sudo
+# Set environment to avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN adduser --disabled-password \
---gecos '' docker
+# Update and install all packages as root
+RUN apt update && apt install -y \
+    sudo \
+    git \
+    cmake \
+    build-essential \
+    gfortran \
+    bzip2 \
+    libbz2-dev \
+    python3 \
+    python3-dev \
+    wget \
+    file
 
-RUN adduser docker sudo
+# Create user and set up permissions
+RUN useradd --create-home --shell /bin/bash --disabled-password --gecos '' docker
 
-RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> \
-/etc/sudoers
+# Set up sudo permissions for the user
+RUN echo 'docker ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
+# Switch to docker user
 USER docker
-
-RUN sudo apt update && sudo apt install -y git cmake build-essential gfortran bzip2 libbz2-dev python-dev-is-python3 wget
 
 ENV CC=gcc   
 ENV CXX=g++   
