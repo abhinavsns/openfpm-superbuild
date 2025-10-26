@@ -80,6 +80,12 @@ RUN cmake .. -DCMAKE_INSTALL_PREFIX=/home/docker/ofp_install  -DCMAKE_BUILD_TYPE
 
 RUN make -j $NCORE install
 
+WORKDIR /home/docker/
+
+RUN ./openfpm/script/create_env_vars.sh $PREFIX_DEPENDS $PREFIX_OPENFPM
+RUN ./openfpm/script/create_example.mk.sh $PREFIX_DEPENDS $PREFIX_OPENFPM
+
+
 
 
 
