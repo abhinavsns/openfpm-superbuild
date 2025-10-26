@@ -13,8 +13,8 @@ configure_options="--with-64-bit-indices --with-parmetis-include=$1/PARMETIS/inc
 configure_options="$configure_options --with-metis-include=$1/METIS/include --with-metis-lib=[$1/METIS/lib/libmetis.so,$1/METIS/lib/libGKlib.a]"
 
 configure_options="$configure_options --with-blaslapack-dir=$1/OPENBLAS"
-#configure_options="$configure_options --with-suitesparse-include=$1/SUITESPARSE/include --with-suitesparse-lib=\"-L$1/SUITESPARSE/lib -lsuitesparse -lopenblas \"" 
-configure_options="$configure_options --download-scalapack --download-mumps --download-superlu_dist --download-hypre --download-scalapack"
+#configure_options="$configure_options --with-suitesparse-include=$1/SUITESPARSE/include --with-suitesparsse-lib=\"-L$1/SUITESPARSE/lib -lsuitesparse -lopenblas \" --download-superlu_dist --download-hypre --download-scalapack" 
+configure_options="$configure_options --download-scalapack --download-mumps"
 
 echo "Installing PETSC with options $configure_options"
 
