@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y sudo
+RUN apt update && apt install -y sudo
 
 RUN adduser --disabled-password \
 --gecos '' docker
@@ -12,8 +12,7 @@ RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> \
 
 USER docker
 
-RUN sudo apt-get update 
-RUN sudo apt-get install -y git cmake build-essential gfortran bzip2 libbz2-dev python-dev-is-python3 wget
+RUN sudo apt update && sudo apt install -y git cmake build-essential gfortran bzip2 libbz2-dev python-dev-is-python3 wget
 
 ENV CC=gcc   
 ENV CXX=g++   
