@@ -20,7 +20,7 @@ ENV F77=gfortran
 ENV FC=gfortran   
 ENV PREFIX_DEPENDS=/home/docker/ofp_dep   
 ENV PREFIX_OPENFPM=/home/docker/ofp_install   
-ENV NCORE=$(nproc)   
+ENV NCORE=4   
 ENV GPU_CUDA_SUPPORT=0
 
 WORKDIR /home/docker/
