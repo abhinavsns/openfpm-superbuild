@@ -11,29 +11,17 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      with:
-        driver-opts: |
-          image=moby/buildkit:buildx-stable-1
-        buildkitd-flags: --debug
-
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Extract metadata (tags, labels)
       id: meta
@@ -55,18 +43,121 @@ jobs:
           org.opencontainers.image.revision=${{ github.sha }}
           org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
 
-    - name: Build and push Docker image
+  build-amd64:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push linux/amd64 image
+      id: build
       uses: docker/build-push-action@v5
       with:
         context: .
         file: ./Dockerfile
         platforms: linux/amd64
         push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-amd64
+        labels: ${{ needs.prepare.outputs.labels }}
+        cache-from: type=gha,scope=linux-amd64
+        cache-to: type=gha,mode=max,scope=linux-amd64
         provenance: false
-        # Optimizations for faster builds and smaller images
+        outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true
         build-args: |
           BUILDKIT_INLINE_CACHE=1
+
+  build-arm64:
+    needs: prepare
+    runs-on: macos-14
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push linux/arm64 image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        platforms: linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64
+        labels: ${{ needs.prepare.outputs.labels }}
+        cache-from: type=gha,scope=linux-arm64
+        cache-to: type=gha,mode=max,scope=linux-arm64
+        provenance: false
+        outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+
+  publish-manifest:
+    if: github.event_name != 'pull_request'
+    needs:
+    - prepare
+    - build-amd64
+    - build-arm64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create and push multi-arch manifest
+      env:
+        TAGS: ${{ needs.prepare.outputs.tags }}
+        AMD64_DIGEST: ${{ needs.build-amd64.outputs.digest }}
+        ARM64_DIGEST: ${{ needs.build-arm64.outputs.digest }}
+      run: |
+        if [ -z "$TAGS" ]; then
+          echo "No tags to publish"
+          exit 1
+        fi
+        while IFS= read -r tag; do
+          if [ -z "$tag" ]; then
+            continue
+          fi
+          docker buildx imagetools create \
+            -t "$tag" \
+            "$AMD64_DIGEST" \
+            "$ARM64_DIGEST"
+        done <<< "$TAGS"
