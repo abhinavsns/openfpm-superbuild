@@ -1,30 +1,18 @@
 FROM debian:bookworm-slim
 
-# Set environment to avoid interactive prompts
-ENV DEBIAN_FRONTEND=noninteractive
+RUN apt update && apt install -y sudo
 
-# Update and install all packages as root
-RUN apt update && apt install -y \
-    sudo \
-    git \
-    cmake \
-    build-essential \
-    gfortran \
-    bzip2 \
-    libbz2-dev \
-    python3 \
-    python3-dev \
-    wget \
-    file
+RUN adduser --disabled-password \
+    --gecos '' docker
 
-# Create user and set up permissions
-RUN useradd --create-home --shell /bin/bash --disabled-password --gecos '' docker
+RUN adduser docker sudo
 
-# Set up sudo permissions for the user
-RUN echo 'docker ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> \
+    /etc/sudoers
 
-# Switch to docker user
 USER docker
+
+RUN sudo apt update && sudo apt install -y git cmake build-essential gfortran bzip2 libbz2-dev python-dev-is-python3 wget
 
 ENV CC=gcc   
 ENV CXX=g++   
@@ -95,9 +83,3 @@ WORKDIR /home/docker/
 
 RUN ./openfpm/script/create_env_vars.sh $PREFIX_DEPENDS $PREFIX_OPENFPM
 RUN ./openfpm/script/create_example.mk.sh $PREFIX_DEPENDS $PREFIX_OPENFPM
-
-
-
-
-
-
